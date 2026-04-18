@@ -978,7 +978,8 @@ void CPlayer::SaveRecentInfoToFiles(bool save_playlist)
         initialized = true;
         return;
     }
-    int song_num = IsPlaylistEmpty() ? 0 : GetSongNum();
+    const bool playlist_empty{ IsPlaylistEmpty() };
+    int song_num = playlist_empty ? 0 : GetSongNum();
 
     // CPlayer应当持有一个此对象代替零散变量
     ListItem list_item{};
@@ -1003,8 +1004,16 @@ void CPlayer::SaveRecentInfoToFiles(bool save_playlist)
         list_item.contain_sub_folder = m_contain_sub_folder;
     }
     list_item.sort_mode = m_sort_mode;
-    list_item.last_track = GetCurrentSongInfo();
-    list_item.last_position = GetCurrentPosition();
+    if (!playlist_empty)
+    {
+        list_item.last_track = GetCurrentSongInfo();
+        list_item.last_position = GetCurrentPosition();
+    }
+    else
+    {
+        list_item.last_track = SongKey();
+        list_item.last_position = 0;
+    }
     list_item.total_time = m_total_time;
     list_item.total_num = song_num;
     CRecentList::Instance().SetCurrentList(list_item);
