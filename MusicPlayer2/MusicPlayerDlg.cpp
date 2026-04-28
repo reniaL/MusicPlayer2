@@ -1900,6 +1900,8 @@ void CMusicPlayerDlg::SetPlaylistColumnLayout(const PlaylistColumnLayout& layout
     m_playlist_list.SetColumnLayout(normalized_layout);
     if (m_pFloatPlaylistDlg->GetSafeHwnd() != NULL)
         m_pFloatPlaylistDlg->GetListCtrl().SetColumnLayout(normalized_layout);
+    if (m_miniModeDlg.GetSafeHwnd() != NULL)
+        m_miniModeDlg.GetPlaylistCtrl().SetColumnLayout(normalized_layout);
 }
 
 void CMusicPlayerDlg::SavePlaylistColumnLayoutFromCtrl(CPlayListCtrl& ctrl)
