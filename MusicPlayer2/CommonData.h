@@ -404,6 +404,18 @@ inline vector<PlaylistColumnId> GetDefaultPlaylistColumnIds()
     };
 }
 
+inline bool IsPlaylistPrimaryColumn(PlaylistColumnId column_id)
+{
+    switch (column_id)
+    {
+    case PlaylistColumnId::Index:
+    case PlaylistColumnId::Duration:
+        return false;
+    default:
+        return true;
+    }
+}
+
 inline wstring PlaylistColumnIdToString(PlaylistColumnId column_id)
 {
     switch (column_id)
@@ -457,6 +469,28 @@ struct PlaylistColumnLayout
     vector<PlaylistColumnId> columns{ GetDefaultPlaylistColumnIds() };
     map<PlaylistColumnId, int> column_widths;
 };
+
+inline void NormalizePlaylistColumnLayout(PlaylistColumnLayout& layout)
+{
+    vector<PlaylistColumnId> normalized_columns;
+    vector<PlaylistColumnId> all_columns{ GetAllPlaylistColumnIds() };
+    for (PlaylistColumnId column_id : layout.columns)
+    {
+        if (std::find(all_columns.begin(), all_columns.end(), column_id) != all_columns.end()
+            && std::find(normalized_columns.begin(), normalized_columns.end(), column_id) == normalized_columns.end())
+        {
+            normalized_columns.push_back(column_id);
+        }
+    }
+    if (normalized_columns.empty())
+        normalized_columns = GetDefaultPlaylistColumnIds();
+
+    bool has_primary_column = std::any_of(normalized_columns.begin(), normalized_columns.end(), IsPlaylistPrimaryColumn);
+    if (!has_primary_column)
+        normalized_columns.push_back(PlaylistColumnId::Track);
+
+    layout.columns = normalized_columns;
+}
 
 struct MediaLibSettingData
 {

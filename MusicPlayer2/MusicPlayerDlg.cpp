@@ -97,6 +97,7 @@ PlaylistColumnLayout DeserializePlaylistColumnLayout(const vector<wstring>& colu
         if (width > 0)
             layout.column_widths[column_id] = width;
     }
+    NormalizePlaylistColumnLayout(layout);
     return layout;
 }
 }
@@ -1893,10 +1894,12 @@ void CMusicPlayerDlg::SetPlaylistSelected(const vector<int>& indexes)
 
 void CMusicPlayerDlg::SetPlaylistColumnLayout(const PlaylistColumnLayout& layout)
 {
-    theApp.m_media_lib_setting_data.playlist_column_layout = layout;
-    m_playlist_list.SetColumnLayout(layout);
+    PlaylistColumnLayout normalized_layout{ layout };
+    NormalizePlaylistColumnLayout(normalized_layout);
+    theApp.m_media_lib_setting_data.playlist_column_layout = normalized_layout;
+    m_playlist_list.SetColumnLayout(normalized_layout);
     if (m_pFloatPlaylistDlg->GetSafeHwnd() != NULL)
-        m_pFloatPlaylistDlg->GetListCtrl().SetColumnLayout(layout);
+        m_pFloatPlaylistDlg->GetListCtrl().SetColumnLayout(normalized_layout);
 }
 
 void CMusicPlayerDlg::SavePlaylistColumnLayoutFromCtrl(CPlayListCtrl& ctrl)

@@ -33,10 +33,10 @@ int CPlayListCtrl::GetDisplayColumnIndex(PlaylistColumnId column_id) const
 
 void CPlayListCtrl::UpdateCachedColumnLayout(const PlaylistColumnLayout& layout)
 {
-    if (layout.columns.empty())
-        return;
-    m_display_columns = layout.columns;
-    m_column_widths = layout.column_widths;
+    PlaylistColumnLayout normalized_layout{ layout };
+    NormalizePlaylistColumnLayout(normalized_layout);
+    m_display_columns = normalized_layout.columns;
+    m_column_widths = normalized_layout.column_widths;
 }
 
 vector<PlaylistColumnId> CPlayListCtrl::GetOrderedDisplayColumns() const
@@ -79,6 +79,7 @@ void CPlayListCtrl::GetColumnLayout(PlaylistColumnLayout& layout) const
 bool CPlayListCtrl::ShowHeaderContextMenu(CWnd* pWnd, PlaylistColumnLayout& layout) const
 {
     GetColumnLayout(layout);
+    NormalizePlaylistColumnLayout(layout);
 
     static constexpr UINT COLUMN_MENU_CMD_BASE = 47000;
     static constexpr UINT COLUMN_MENU_CMD_RESTORE_DEFAULT = COLUMN_MENU_CMD_BASE + 100;
@@ -117,13 +118,22 @@ bool CPlayListCtrl::ShowHeaderContextMenu(CWnd* pWnd, PlaylistColumnLayout& layo
     if (iter == layout.columns.end())
     {
         layout.columns.push_back(column_id);
+        NormalizePlaylistColumnLayout(layout);
         return true;
+    }
+
+    if (IsPlaylistPrimaryColumn(column_id))
+    {
+        int primary_column_count = static_cast<int>(std::count_if(layout.columns.begin(), layout.columns.end(), IsPlaylistPrimaryColumn));
+        if (primary_column_count <= 1)
+            return false;
     }
 
     if (layout.columns.size() <= 1)
         return false;
 
     layout.columns.erase(iter);
+    NormalizePlaylistColumnLayout(layout);
     return true;
 }
 
