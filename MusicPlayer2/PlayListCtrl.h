@@ -28,6 +28,7 @@ public:
     CPlayListCtrl(const vector<SongInfo>& all_song_info);
     virtual ~CPlayListCtrl();
 
+    void SetDisplayColumns(const vector<PlaylistColumnId>& columns);
     void ShowPlaylist(DisplayFormat display_format, bool search_result = false);		//显示播放列表
     void QuickSearch(const wstring& key_words);		//根据关键字执行快速查找，查找文件名、歌曲标题、艺术家和唱片集，将找到的曲目的序号保存在m_search_result中
     void GetItemSelectedSearched(vector<int>& item_selected) const;		//获取处于搜索状态下播放列表选中的项目

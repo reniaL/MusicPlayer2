@@ -31,6 +31,15 @@ int CPlayListCtrl::GetDisplayColumnIndex(PlaylistColumnId column_id) const
     return static_cast<int>(iter - m_display_columns.begin());
 }
 
+void CPlayListCtrl::SetDisplayColumns(const vector<PlaylistColumnId>& columns)
+{
+    if (columns.empty())
+        return;
+    m_display_columns = columns;
+    if (GetSafeHwnd() != NULL)
+        RebuildColumns();
+}
+
 int CPlayListCtrl::GetColumnBaseWidth(PlaylistColumnId column_id) const
 {
     switch (column_id)
@@ -151,6 +160,8 @@ void CPlayListCtrl::ShowPlaylist(DisplayFormat display_format, bool search_resul
             CListCtrlEx::RowData row_data;
             int message_column = GetDisplayColumnIndex(PlaylistColumnId::Track);
             if (message_column < 0)
+                message_column = GetDisplayColumnIndex(PlaylistColumnId::Title);
+            if (message_column < 0)
                 message_column = 0;
             row_data[message_column] = theApp.m_str_table.LoadText(L"TXT_PLAYLIST_CTRL_NO_RESULT_TO_SHOW");
             m_list_data.push_back(std::move(row_data));
@@ -262,6 +273,28 @@ void CPlayListCtrl::CalculateColumeWidth(vector<int>& width)
 
     for (size_t i{}; i < m_display_columns.size(); ++i)
         width[i] = GetColumnBaseWidth(m_display_columns[i]);
+
+    int flexible_column = GetDisplayColumnIndex(PlaylistColumnId::Track);
+    if (flexible_column < 0)
+        flexible_column = GetDisplayColumnIndex(PlaylistColumnId::Title);
+    if (flexible_column < 0)
+        flexible_column = GetDisplayColumnIndex(PlaylistColumnId::FileName);
+    if (flexible_column < 0)
+        flexible_column = GetDisplayColumnIndex(PlaylistColumnId::Path);
+
+    if (flexible_column >= 0)
+    {
+        CRect rect;
+        GetWindowRect(rect);
+        int reserved_width{};
+        for (size_t i{}; i < width.size(); ++i)
+        {
+            if (static_cast<int>(i) != flexible_column)
+                reserved_width += width[i];
+        }
+        int available_width = rect.Width() - reserved_width - theApp.DPI(20) - 1;
+        width[flexible_column] = (std::max)(width[flexible_column], available_width);
+    }
 }
 
 void CPlayListCtrl::OnMouseMove(UINT nFlags, CPoint point)
@@ -287,6 +320,10 @@ void CPlayListCtrl::OnMouseMove(UINT nFlags, CPoint point)
             if (song_index >= 0 && song_index < static_cast<int>(m_all_song_info.size()) && !m_dragging)
             {
                 int text_column = GetDisplayColumnIndex(PlaylistColumnId::Track);
+                if (text_column < 0)
+                    text_column = GetDisplayColumnIndex(PlaylistColumnId::Title);
+                if (text_column < 0)
+                    text_column = GetDisplayColumnIndex(PlaylistColumnId::FileName);
                 if (text_column < 0)
                     text_column = 0;
                 CString dis_str = GetItemText(m_nItem, text_column);
