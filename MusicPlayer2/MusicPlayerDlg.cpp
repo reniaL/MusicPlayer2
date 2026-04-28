@@ -1903,13 +1903,7 @@ void CMusicPlayerDlg::SavePlaylistColumnLayoutFromCtrl(CPlayListCtrl& ctrl)
 {
     PlaylistColumnLayout layout;
     ctrl.GetColumnLayout(layout);
-    ctrl.UpdateCachedColumnLayout(layout);
-    theApp.m_media_lib_setting_data.playlist_column_layout = layout;
-
-    if (&ctrl != &m_playlist_list)
-        m_playlist_list.SetColumnLayout(layout);
-    if (m_pFloatPlaylistDlg->GetSafeHwnd() != NULL && &ctrl != &m_pFloatPlaylistDlg->GetListCtrl())
-        m_pFloatPlaylistDlg->GetListCtrl().SetColumnLayout(layout);
+    SetPlaylistColumnLayout(layout);
 }
 
 void CMusicPlayerDlg::SetUiPlaylistSelected(int index)
