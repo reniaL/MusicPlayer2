@@ -14,7 +14,7 @@ IMPLEMENT_DYNAMIC(CPlayListCtrl, CListCtrlEx)
 //通过构造函数参数传递列表中所有文件的信息的引用
 CPlayListCtrl::CPlayListCtrl(const vector<SongInfo>& all_song_info)
     : m_all_song_info{ all_song_info }
-    , m_display_columns{ PlaylistColumnId::Index, PlaylistColumnId::Track, PlaylistColumnId::Duration }
+    , m_display_columns{ GetDefaultPlaylistColumnIds() }
 {
     m_toolTip.CreateEx(this, TTS_ALWAYSTIP | TTS_NOPREFIX, WS_EX_TRANSPARENT);
 }
@@ -31,13 +31,148 @@ int CPlayListCtrl::GetDisplayColumnIndex(PlaylistColumnId column_id) const
     return static_cast<int>(iter - m_display_columns.begin());
 }
 
-void CPlayListCtrl::SetDisplayColumns(const vector<PlaylistColumnId>& columns)
+void CPlayListCtrl::UpdateCachedColumnLayout(const PlaylistColumnLayout& layout)
 {
-    if (columns.empty())
+    if (layout.columns.empty())
         return;
-    m_display_columns = columns;
+    m_display_columns = layout.columns;
+    m_column_widths = layout.column_widths;
+}
+
+vector<PlaylistColumnId> CPlayListCtrl::GetOrderedDisplayColumns() const
+{
+    const int column_count = static_cast<int>(m_display_columns.size());
+    if (GetSafeHwnd() == NULL || column_count <= 0)
+        return m_display_columns;
+
+    auto pHeader = GetHeaderCtrl();
+    if (pHeader == nullptr || pHeader->GetItemCount() != column_count)
+        return m_display_columns;
+
+    vector<int> order(column_count);
+    if (!GetColumnOrderArray(order.data(), column_count))
+        return m_display_columns;
+
+    vector<PlaylistColumnId> ordered_columns;
+    ordered_columns.reserve(column_count);
+    for (int index : order)
+    {
+        if (index >= 0 && index < column_count)
+            ordered_columns.push_back(m_display_columns[index]);
+    }
+    if (ordered_columns.size() != m_display_columns.size())
+        return m_display_columns;
+    return ordered_columns;
+}
+
+void CPlayListCtrl::GetColumnLayout(PlaylistColumnLayout& layout) const
+{
+    layout.columns = GetOrderedDisplayColumns();
+    layout.column_widths = m_column_widths;
+    if (GetSafeHwnd() == NULL)
+        return;
+    const int column_count = static_cast<int>(m_display_columns.size());
+    for (int i{}; i < column_count; ++i)
+        layout.column_widths[m_display_columns[i]] = GetColumnWidth(i);
+}
+
+bool CPlayListCtrl::ShowHeaderContextMenu(CWnd* pWnd, PlaylistColumnLayout& layout) const
+{
+    GetColumnLayout(layout);
+
+    static constexpr UINT COLUMN_MENU_CMD_BASE = 47000;
+    static constexpr UINT COLUMN_MENU_CMD_RESTORE_DEFAULT = COLUMN_MENU_CMD_BASE + 100;
+
+    vector<PlaylistColumnId> all_columns{ GetAllPlaylistColumnIds() };
+    CMenu menu;
+    menu.CreatePopupMenu();
+    for (size_t i{}; i < all_columns.size(); ++i)
+    {
+        UINT flags = MF_STRING;
+        if (std::find(layout.columns.begin(), layout.columns.end(), all_columns[i]) != layout.columns.end())
+            flags |= MF_CHECKED;
+        menu.AppendMenu(flags, COLUMN_MENU_CMD_BASE + static_cast<UINT>(i), GetColumnTitle(all_columns[i]).c_str());
+    }
+    menu.AppendMenu(MF_SEPARATOR);
+    menu.AppendMenu(MF_STRING, COLUMN_MENU_CMD_RESTORE_DEFAULT, theApp.m_str_table.LoadText(L"TXT_RESTORE_DEFAULT").c_str());
+
+    CPoint point;
+    GetCursorPos(&point);
+    UINT command = menu.TrackPopupMenu(TPM_LEFTALIGN | TPM_RIGHTBUTTON | TPM_RETURNCMD | TPM_NONOTIFY, point.x, point.y, pWnd);
+    if (command == 0)
+        return false;
+
+    if (command == COLUMN_MENU_CMD_RESTORE_DEFAULT)
+    {
+        layout = PlaylistColumnLayout{};
+        return true;
+    }
+
+    const UINT column_index = command - COLUMN_MENU_CMD_BASE;
+    if (column_index >= all_columns.size())
+        return false;
+
+    const PlaylistColumnId column_id = all_columns[column_index];
+    auto iter = std::find(layout.columns.begin(), layout.columns.end(), column_id);
+    if (iter == layout.columns.end())
+    {
+        layout.columns.push_back(column_id);
+        return true;
+    }
+
+    if (layout.columns.size() <= 1)
+        return false;
+
+    layout.columns.erase(iter);
+    return true;
+}
+
+bool CPlayListCtrl::IsHeaderCtrl(HWND hwnd) const
+{
+    auto pHeader = GetHeaderCtrl();
+    return pHeader != nullptr && pHeader->GetSafeHwnd() == hwnd;
+}
+
+void CPlayListCtrl::SetColumnLayout(const PlaylistColumnLayout& layout)
+{
+    if (layout.columns.empty())
+        return;
+
+    vector<int> selected_song_indexes;
+    int current_song_index{ -1 };
     if (GetSafeHwnd() != NULL)
-        RebuildColumns();
+    {
+        GetItemSelectedSongIndexes(selected_song_indexes);
+        current_song_index = GetSongIndexByItem(GetCurSel());
+    }
+
+    UpdateCachedColumnLayout(layout);
+    if (GetSafeHwnd() == NULL)
+        return;
+
+    RebuildColumns();
+    if (GetItemCount() > 0)
+    {
+        ShowPlaylist(m_display_format, m_searched);
+
+        vector<int> selected_items;
+        for (int song_index : selected_song_indexes)
+        {
+            int item = GetItemBySongIndex(song_index);
+            if (item >= 0)
+                selected_items.push_back(item);
+        }
+        if (!selected_items.empty())
+        {
+            SetCurSel(selected_items);
+        }
+        else if (current_song_index >= 0)
+        {
+            int item = GetItemBySongIndex(current_song_index);
+            if (item >= 0)
+                SetCurSel(item);
+        }
+    }
 }
 
 int CPlayListCtrl::GetColumnBaseWidth(PlaylistColumnId column_id) const
@@ -131,6 +266,7 @@ void CPlayListCtrl::RebuildColumns()
 
 void CPlayListCtrl::ShowPlaylist(DisplayFormat display_format, bool search_result)
 {
+    m_display_format = display_format;
     m_searched = search_result;
     m_list_data.clear();
     m_item_song_indexes.clear();
@@ -198,6 +334,14 @@ int CPlayListCtrl::GetSongIndexByItem(int item) const
     return m_item_song_indexes[item];
 }
 
+int CPlayListCtrl::GetItemBySongIndex(int song_index) const
+{
+    auto iter = std::find(m_item_song_indexes.begin(), m_item_song_indexes.end(), song_index);
+    if (iter == m_item_song_indexes.end())
+        return -1;
+    return static_cast<int>(iter - m_item_song_indexes.begin());
+}
+
 void CPlayListCtrl::GetItemSelectedSongIndexes(vector<int>& item_selected) const
 {
     item_selected.clear();
@@ -254,7 +398,8 @@ END_MESSAGE_MAP()
 
 void CPlayListCtrl::CalculateColumeWidth(vector<int>& width)
 {
-    width.resize(m_display_columns.size());
+    const int column_count = static_cast<int>(m_display_columns.size());
+    width.resize(column_count);
     if (m_display_columns.empty())
         return;
 
@@ -271,8 +416,14 @@ void CPlayListCtrl::CalculateColumeWidth(vector<int>& width)
         return;
     }
 
-    for (size_t i{}; i < m_display_columns.size(); ++i)
-        width[i] = GetColumnBaseWidth(m_display_columns[i]);
+    for (int i{}; i < column_count; ++i)
+    {
+        auto iter = m_column_widths.find(m_display_columns[i]);
+        if (iter != m_column_widths.end() && iter->second > 0)
+            width[i] = iter->second;
+        else
+            width[i] = GetColumnBaseWidth(m_display_columns[i]);
+    }
 
     int flexible_column = GetDisplayColumnIndex(PlaylistColumnId::Track);
     if (flexible_column < 0)
@@ -287,9 +438,9 @@ void CPlayListCtrl::CalculateColumeWidth(vector<int>& width)
         CRect rect;
         GetWindowRect(rect);
         int reserved_width{};
-        for (size_t i{}; i < width.size(); ++i)
+        for (int i{}; i < column_count; ++i)
         {
-            if (static_cast<int>(i) != flexible_column)
+            if (i != flexible_column)
                 reserved_width += width[i];
         }
         int available_width = rect.Width() - reserved_width - theApp.DPI(20) - 1;
@@ -380,7 +531,7 @@ void CPlayListCtrl::PreSubclassWindow()
 
     //初始化播放列表
     DWORD style = GetExtendedStyle();
-    style = (style | LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES | LVS_EX_DOUBLEBUFFER);
+    style = (style | LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES | LVS_EX_DOUBLEBUFFER | LVS_EX_HEADERDRAGDROP);
     style &= ~LVS_EX_LABELTIP;      //播放列表控件使用自己的鼠标提示，因此不需要LVS_EX_LABELTIP样式
     SetExtendedStyle(style);
     RebuildColumns();

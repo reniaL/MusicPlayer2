@@ -368,6 +368,96 @@ enum MediaLibDisplayItem
     MLDI_FOLDER_EXPLORE = (1 << 9)
 };
 
+enum class PlaylistColumnId
+{
+    Index,
+    Track,
+    Duration,
+    Title,
+    Artist,
+    Album,
+    FileName,
+    Path,
+};
+
+inline vector<PlaylistColumnId> GetAllPlaylistColumnIds()
+{
+    return {
+        PlaylistColumnId::Index,
+        PlaylistColumnId::Track,
+        PlaylistColumnId::Title,
+        PlaylistColumnId::Artist,
+        PlaylistColumnId::Album,
+        PlaylistColumnId::Duration,
+        PlaylistColumnId::FileName,
+        PlaylistColumnId::Path,
+    };
+}
+
+inline vector<PlaylistColumnId> GetDefaultPlaylistColumnIds()
+{
+    return {
+        PlaylistColumnId::Index,
+        PlaylistColumnId::Track,
+        PlaylistColumnId::Album,
+        PlaylistColumnId::Duration,
+    };
+}
+
+inline wstring PlaylistColumnIdToString(PlaylistColumnId column_id)
+{
+    switch (column_id)
+    {
+    case PlaylistColumnId::Index:
+        return L"index";
+    case PlaylistColumnId::Track:
+        return L"track";
+    case PlaylistColumnId::Duration:
+        return L"duration";
+    case PlaylistColumnId::Title:
+        return L"title";
+    case PlaylistColumnId::Artist:
+        return L"artist";
+    case PlaylistColumnId::Album:
+        return L"album";
+    case PlaylistColumnId::FileName:
+        return L"file_name";
+    case PlaylistColumnId::Path:
+        return L"path";
+    default:
+        return wstring();
+    }
+}
+
+inline bool PlaylistColumnIdFromString(const wstring& str, PlaylistColumnId& column_id)
+{
+    if (str == L"index")
+        column_id = PlaylistColumnId::Index;
+    else if (str == L"track")
+        column_id = PlaylistColumnId::Track;
+    else if (str == L"duration")
+        column_id = PlaylistColumnId::Duration;
+    else if (str == L"title")
+        column_id = PlaylistColumnId::Title;
+    else if (str == L"artist")
+        column_id = PlaylistColumnId::Artist;
+    else if (str == L"album")
+        column_id = PlaylistColumnId::Album;
+    else if (str == L"file_name")
+        column_id = PlaylistColumnId::FileName;
+    else if (str == L"path")
+        column_id = PlaylistColumnId::Path;
+    else
+        return false;
+    return true;
+}
+
+struct PlaylistColumnLayout
+{
+    vector<PlaylistColumnId> columns{ GetDefaultPlaylistColumnIds() };
+    map<PlaylistColumnId, int> column_widths;
+};
+
 struct MediaLibSettingData
 {
     vector<wstring> media_folders;      //媒体库文件夹浏览中显示的文件夹
@@ -386,6 +476,7 @@ struct MediaLibSettingData
     bool float_playlist_follow_main_wnd{};  //浮动播放列表跟随主窗口
     bool playlist_btn_for_float_playlist{ false };      // 指定主界面中进度条右侧的“显示/隐藏播放列表”按钮的功能是否为显示浮动播放列表
     int playlist_item_height{ 24 };
+    PlaylistColumnLayout playlist_column_layout;
     bool merge_song_different_versions{ true };     //文件夹模式和媒体库模式下，合并同一首曲目的不同版本
     RecentPlayedRange recent_played_range{};    //最近播放曲目列表的显示范围
     int display_item{};                 //媒体库显示的项目
