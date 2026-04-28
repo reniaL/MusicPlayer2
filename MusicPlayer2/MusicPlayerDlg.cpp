@@ -1910,19 +1910,8 @@ void CMusicPlayerDlg::ShowHideFloatPlaylist()
 
 void CMusicPlayerDlg::GetPlaylistItemSelected(int cur_index)
 {
-    if (!m_searched)
-    {
-        m_item_selected = cur_index;  //获取鼠标选中的项目
-        m_playlist_list.GetItemSelected(m_items_selected);      //获取多个选中的项目
-    }
-    else
-    {
-        CString str;
-        str = m_playlist_list.GetItemText(cur_index, 0);
-        m_item_selected = _ttoi(str) - 1;
-        m_playlist_list.GetItemSelectedSearched(m_items_selected);
-    }
-
+    m_item_selected = m_playlist_list.GetSongIndexByItem(cur_index);
+    m_playlist_list.GetItemSelectedSongIndexes(m_items_selected);
 }
 
 void CMusicPlayerDlg::GetPlaylistItemSelected()
@@ -3320,18 +3309,8 @@ void CMusicPlayerDlg::OnGetMinMaxInfo(MINMAXINFO* lpMMI)
 void CMusicPlayerDlg::OnNMDblclkPlaylistList(NMHDR* pNMHDR, LRESULT* pResult)
 {
     LPNMITEMACTIVATE pNMItemActivate = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
-    SetUiPlaylistSelected(pNMItemActivate->iItem);
-    int song_index{};
-    if (!m_searched)    //如果播放列表不在搜索状态，则当前选中项的行号就是曲目的索引
-    {
-        song_index = pNMItemActivate->iItem;
-    }
-    else        //如果播放列表处理选中状态，则曲目的索引是选中行第一列的数字-1
-    {
-        CString str;
-        str = m_playlist_list.GetItemText(pNMItemActivate->iItem, 0);
-        song_index = _ttoi(str) - 1;
-    }
+    int song_index = m_playlist_list.GetSongIndexByItem(pNMItemActivate->iItem);
+    SetUiPlaylistSelected(song_index);
 
     if (song_index < 0) return;
     if (!CPlayer::GetInstance().PlayTrack(song_index))
@@ -3372,19 +3351,8 @@ void CMusicPlayerDlg::OnReloadPlaylist()
 void CMusicPlayerDlg::OnNMRClickPlaylistList(NMHDR* pNMHDR, LRESULT* pResult)
 {
     LPNMITEMACTIVATE pNMItemActivate = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
-    SetUiPlaylistSelected(pNMItemActivate->iItem);
-    if (!m_searched)
-    {
-        m_item_selected = pNMItemActivate->iItem;   //获取鼠标选中的项目
-        m_playlist_list.GetItemSelected(m_items_selected);      //获取多个选中的项目
-    }
-    else
-    {
-        CString str;
-        str = m_playlist_list.GetItemText(pNMItemActivate->iItem, 0);
-        m_item_selected = _ttoi(str) - 1;
-        m_playlist_list.GetItemSelectedSearched(m_items_selected);
-    }
+    SetUiPlaylistSelected(m_playlist_list.GetSongIndexByItem(pNMItemActivate->iItem));
+    GetPlaylistItemSelected(pNMItemActivate->iItem);
 
     CMenu* pContextMenu{};
     if (m_item_selected >= 0)

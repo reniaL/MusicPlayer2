@@ -116,19 +116,8 @@ CSearchEditCtrl& CFloatPlaylistDlg::GetSearchBox()
 
 void CFloatPlaylistDlg::GetPlaylistItemSelected()
 {
-    if (!m_searched)
-    {
-        m_item_selected = m_playlist_ctrl.GetCurSel();	//获取鼠标选中的项目
-        m_playlist_ctrl.GetItemSelected(m_items_selected);		//获取多个选中的项目
-    }
-    else
-    {
-        CString str;
-        str = m_playlist_ctrl.GetItemText(m_playlist_ctrl.GetCurSel(), 0);
-        m_item_selected = _ttoi(str) - 1;
-        m_playlist_ctrl.GetItemSelectedSearched(m_items_selected);
-    }
-
+    m_item_selected = m_playlist_ctrl.GetSongIndexByItem(m_playlist_ctrl.GetCurSel());
+    m_playlist_ctrl.GetItemSelectedSongIndexes(m_items_selected);
 }
 
 void CFloatPlaylistDlg::SetDragEnable()
@@ -311,19 +300,9 @@ void CFloatPlaylistDlg::OnNMRClickPlaylistList(NMHDR* pNMHDR, LRESULT* pResult)
     LPNMITEMACTIVATE pNMItemActivate = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
     CMusicPlayerDlg* main_wnd = CMusicPlayerDlg::GetInstance();
     if (main_wnd != nullptr)
-        main_wnd->SetUiPlaylistSelected(pNMItemActivate->iItem);
-    if (!m_searched)
-    {
-        m_item_selected = pNMItemActivate->iItem;	//获取鼠标选中的项目
-        m_playlist_ctrl.GetItemSelected(m_items_selected);		//获取多个选中的项目
-    }
-    else
-    {
-        CString str;
-        str = m_playlist_ctrl.GetItemText(pNMItemActivate->iItem, 0);
-        m_item_selected = _ttoi(str) - 1;
-        m_playlist_ctrl.GetItemSelectedSearched(m_items_selected);
-    }
+        main_wnd->SetUiPlaylistSelected(m_playlist_ctrl.GetSongIndexByItem(pNMItemActivate->iItem));
+    m_item_selected = m_playlist_ctrl.GetSongIndexByItem(pNMItemActivate->iItem);
+    m_playlist_ctrl.GetItemSelectedSongIndexes(m_items_selected);
 
     CMenu* pContextMenu{};
     if (m_item_selected >= 0)
@@ -339,24 +318,12 @@ void CFloatPlaylistDlg::OnNMDblclkPlaylistList(NMHDR* pNMHDR, LRESULT* pResult)
 {
     LPNMITEMACTIVATE pNMItemActivate = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
     CMusicPlayerDlg* main_wnd = CMusicPlayerDlg::GetInstance();
+    int song_index = m_playlist_ctrl.GetSongIndexByItem(pNMItemActivate->iItem);
     if (main_wnd != nullptr)
-        main_wnd->SetUiPlaylistSelected(pNMItemActivate->iItem);
-    if (!m_searched)	//如果播放列表不在搜索状态，则当前选中项的行号就是曲目的索引
-    {
-        if (pNMItemActivate->iItem < 0)
-            return;
-        m_item_selected = pNMItemActivate->iItem;
-    }
-    else		//如果播放列表处理选中状态，则曲目的索引是选中行第一列的数字-1
-    {
-        int song_index;
-        CString str;
-        str = m_playlist_ctrl.GetItemText(pNMItemActivate->iItem, 0);
-        song_index = _ttoi(str) - 1;
-        if (song_index < 0)
-            return;
-        m_item_selected = song_index;
-    }
+        main_wnd->SetUiPlaylistSelected(song_index);
+    if (song_index < 0)
+        return;
+    m_item_selected = song_index;
     theApp.m_pMainWnd->SendMessage(WM_COMMAND, ID_PLAY_ITEM);
 
     *pResult = 0;
