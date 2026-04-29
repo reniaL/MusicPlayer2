@@ -67,13 +67,14 @@ vector<PlaylistColumnId> CPlayListCtrl::GetOrderedDisplayColumns() const
 
 void CPlayListCtrl::GetColumnLayout(PlaylistColumnLayout& layout) const
 {
-    layout.columns = GetOrderedDisplayColumns();
+    const vector<PlaylistColumnId> ordered_columns{ GetOrderedDisplayColumns() };
+    layout.columns = ordered_columns;
     layout.column_widths = m_column_widths;
     if (GetSafeHwnd() == NULL)
         return;
-    const int column_count = static_cast<int>(m_display_columns.size());
+    const int column_count = static_cast<int>(ordered_columns.size());
     for (int i{}; i < column_count; ++i)
-        layout.column_widths[m_display_columns[i]] = GetColumnWidth(i);
+        layout.column_widths[ordered_columns[i]] = GetColumnWidth(i);
 }
 
 bool CPlayListCtrl::ShowHeaderContextMenu(CWnd* pWnd, PlaylistColumnLayout& layout) const

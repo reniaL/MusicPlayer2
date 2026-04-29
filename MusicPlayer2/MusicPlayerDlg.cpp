@@ -241,6 +241,7 @@ BEGIN_MESSAGE_MAP(CMusicPlayerDlg, CMainDialogBase)
     ON_NOTIFY(NM_RCLICK, 0, &CMusicPlayerDlg::OnNMRClickPlaylistHeader)
     ON_NOTIFY(HDN_ENDDRAG, 0, &CMusicPlayerDlg::OnHdnEnddragPlaylistHeader)
     ON_NOTIFY(HDN_ENDTRACK, 0, &CMusicPlayerDlg::OnHdnEndtrackPlaylistHeader)
+    ON_MESSAGE(WM_PLAYLIST_HEADER_DRAGGED, &CMusicPlayerDlg::OnPlaylistHeaderDragged)
     ON_COMMAND(ID_PLAY_ITEM, &CMusicPlayerDlg::OnPlayItem)
     ON_COMMAND(ID_ITEM_PROPERTY, &CMusicPlayerDlg::OnItemProperty)
     ON_COMMAND(ID_EXPLORE_TRACK, &CMusicPlayerDlg::OnExploreTrack)
@@ -3467,7 +3468,7 @@ void CMusicPlayerDlg::OnHdnEnddragPlaylistHeader(NMHDR* pNMHDR, LRESULT* pResult
     *pResult = 0;
     if (m_playlist_list.IsHeaderCtrl(pNMHDR->hwndFrom))
     {
-        SavePlaylistColumnLayoutFromCtrl(m_playlist_list);
+        PostMessage(WM_PLAYLIST_HEADER_DRAGGED);
     }
 }
 
@@ -3478,6 +3479,14 @@ void CMusicPlayerDlg::OnHdnEndtrackPlaylistHeader(NMHDR* pNMHDR, LRESULT* pResul
     {
         SavePlaylistColumnLayoutFromCtrl(m_playlist_list);
     }
+}
+
+LRESULT CMusicPlayerDlg::OnPlaylistHeaderDragged(WPARAM wParam, LPARAM lParam)
+{
+    UNREFERENCED_PARAMETER(wParam);
+    UNREFERENCED_PARAMETER(lParam);
+    SavePlaylistColumnLayoutFromCtrl(m_playlist_list);
+    return 0;
 }
 
 
