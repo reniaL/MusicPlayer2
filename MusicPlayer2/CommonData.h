@@ -376,6 +376,9 @@ enum class PlaylistColumnId
     Title,
     Artist,
     Album,
+    TrackNumber,
+    Genre,
+    Bitrate,
     FileName,
     Path,
 };
@@ -388,6 +391,9 @@ inline vector<PlaylistColumnId> GetAllPlaylistColumnIds()
         PlaylistColumnId::Title,
         PlaylistColumnId::Artist,
         PlaylistColumnId::Album,
+        PlaylistColumnId::TrackNumber,
+        PlaylistColumnId::Genre,
+        PlaylistColumnId::Bitrate,
         PlaylistColumnId::Duration,
         PlaylistColumnId::FileName,
         PlaylistColumnId::Path,
@@ -432,6 +438,12 @@ inline wstring PlaylistColumnIdToString(PlaylistColumnId column_id)
         return L"artist";
     case PlaylistColumnId::Album:
         return L"album";
+    case PlaylistColumnId::TrackNumber:
+        return L"track_number";
+    case PlaylistColumnId::Genre:
+        return L"genre";
+    case PlaylistColumnId::Bitrate:
+        return L"bitrate";
     case PlaylistColumnId::FileName:
         return L"file_name";
     case PlaylistColumnId::Path:
@@ -455,6 +467,12 @@ inline bool PlaylistColumnIdFromString(const wstring& str, PlaylistColumnId& col
         column_id = PlaylistColumnId::Artist;
     else if (str == L"album")
         column_id = PlaylistColumnId::Album;
+    else if (str == L"track_number")
+        column_id = PlaylistColumnId::TrackNumber;
+    else if (str == L"genre")
+        column_id = PlaylistColumnId::Genre;
+    else if (str == L"bitrate")
+        column_id = PlaylistColumnId::Bitrate;
     else if (str == L"file_name")
         column_id = PlaylistColumnId::FileName;
     else if (str == L"path")

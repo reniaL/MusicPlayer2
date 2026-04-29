@@ -194,6 +194,11 @@ int CPlayListCtrl::GetColumnBaseWidth(PlaylistColumnId column_id) const
         return theApp.DPI(40);
     case PlaylistColumnId::Duration:
         return theApp.DPI(50);
+    case PlaylistColumnId::TrackNumber:
+    case PlaylistColumnId::Bitrate:
+        return theApp.DPI(60);
+    case PlaylistColumnId::Genre:
+        return theApp.DPI(100);
     case PlaylistColumnId::Title:
         return theApp.DPI(180);
     case PlaylistColumnId::Artist:
@@ -226,6 +231,12 @@ wstring CPlayListCtrl::GetColumnTitle(PlaylistColumnId column_id) const
         return theApp.m_str_table.LoadText(L"TXT_ARTIST");
     case PlaylistColumnId::Album:
         return theApp.m_str_table.LoadText(L"TXT_ALBUM");
+    case PlaylistColumnId::TrackNumber:
+        return theApp.m_str_table.LoadText(L"TXT_TRACK_NUM");
+    case PlaylistColumnId::Genre:
+        return theApp.m_str_table.LoadText(L"TXT_GENRE");
+    case PlaylistColumnId::Bitrate:
+        return theApp.m_str_table.LoadText(L"TXT_BITRATE");
     case PlaylistColumnId::FileName:
         return theApp.m_str_table.LoadText(L"TXT_FILE_NAME");
     case PlaylistColumnId::Path:
@@ -251,6 +262,17 @@ wstring CPlayListCtrl::GetColumnText(PlaylistColumnId column_id, const SongInfo&
         return song.GetArtist();
     case PlaylistColumnId::Album:
         return song.GetAlbum();
+    case PlaylistColumnId::TrackNumber:
+    {
+        wstring track_number;
+        if (song.track != 0)
+            track_number = std::to_wstring(song.track);
+        return track_number;
+    }
+    case PlaylistColumnId::Genre:
+        return song.GetGenre();
+    case PlaylistColumnId::Bitrate:
+        return (song.bitrate == 0 ? L"-" : std::to_wstring(song.bitrate));
     case PlaylistColumnId::FileName:
         return song.GetFileName();
     case PlaylistColumnId::Path:
