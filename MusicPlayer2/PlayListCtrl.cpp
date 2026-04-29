@@ -259,7 +259,7 @@ wstring CPlayListCtrl::GetColumnText(PlaylistColumnId column_id, const SongInfo&
     }
 }
 
-void CPlayListCtrl::RebuildColumns()
+void CPlayListCtrl::RebuildColumns(bool adjust_flexible_column)
 {
     auto pHeader = GetHeaderCtrl();
     if (pHeader != nullptr)
@@ -269,7 +269,7 @@ void CPlayListCtrl::RebuildColumns()
     }
 
     vector<int> width;
-    CalculateColumeWidth(width);
+    CalculateColumeWidth(width, adjust_flexible_column);
     for (size_t i{}; i < m_display_columns.size(); ++i)
         InsertColumn(static_cast<int>(i), GetColumnTitle(m_display_columns[i]).c_str(), LVCFMT_LEFT, width[i]);
 }
@@ -382,7 +382,7 @@ void CPlayListCtrl::ShowPopupMenu(CMenu* pMenu, int item_index, CWnd* pWnd)
 void CPlayListCtrl::AdjustColumnWidth()
 {
     vector<int> width;
-    CalculateColumeWidth(width);
+    CalculateColumeWidth(width, true);
 
     for (size_t i{}; i<width.size(); i++)
         SetColumnWidth(static_cast<int>(i), width[i]);
@@ -406,14 +406,15 @@ END_MESSAGE_MAP()
 
 // CPlayListCtrl 消息处理程序
 
-void CPlayListCtrl::CalculateColumeWidth(vector<int>& width)
+void CPlayListCtrl::CalculateColumeWidth(vector<int>& width, bool adjust_flexible_column)
 {
     const int column_count = static_cast<int>(m_display_columns.size());
     width.resize(column_count);
     if (m_display_columns.empty())
         return;
 
-    if (m_display_columns.size() == 3
+    if (adjust_flexible_column
+        && m_display_columns.size() == 3
         && m_display_columns[0] == PlaylistColumnId::Index
         && m_display_columns[1] == PlaylistColumnId::Track
         && m_display_columns[2] == PlaylistColumnId::Duration)
@@ -443,7 +444,7 @@ void CPlayListCtrl::CalculateColumeWidth(vector<int>& width)
     if (flexible_column < 0)
         flexible_column = GetDisplayColumnIndex(PlaylistColumnId::Path);
 
-    if (flexible_column >= 0)
+    if (adjust_flexible_column && flexible_column >= 0)
     {
         CRect rect;
         GetWindowRect(rect);

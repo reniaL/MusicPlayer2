@@ -48,8 +48,8 @@ protected:
     DisplayFormat m_display_format{};
 
 protected:
-    void CalculateColumeWidth(vector<int>& width);
-    void RebuildColumns();
+    void CalculateColumeWidth(vector<int>& width, bool adjust_flexible_column);
+    void RebuildColumns(bool adjust_flexible_column = false);
     vector<PlaylistColumnId> GetOrderedDisplayColumns() const;
     int GetDisplayColumnIndex(PlaylistColumnId column_id) const;
     int GetColumnBaseWidth(PlaylistColumnId column_id) const;
